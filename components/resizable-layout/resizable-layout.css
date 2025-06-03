@@ -1,0 +1,23 @@
+/* Prevent text selection during resize */
+.cursor-col-resize {
+  cursor: col-resize;
+}
+
+.cursor-col-resize * {
+  user-select: none;
+}
+
+/* Prevent scrolling when dragging on mobile */
+body.resize-dragging {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Ensure content is centered on mobile */
+@media (max-width: 767px) {
+  .mobile-centered {
+    margin: 0 auto;
+    max-width: 700px;
+    min-width: 360px;
+  }
+}
