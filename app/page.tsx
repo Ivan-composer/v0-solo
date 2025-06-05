@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Header from "@/components/header"
-import IdeaInput from "@/components/idea-input"
-import TrendingIdeas from "@/components/trending-ideas"
-import ProjectThumbnails from "@/components/project-thumbnails"
+import Header from "@/components/homepage/header"
+import IdeaInput from "@/components/homepage/idea-input"
+import TrendingIdeas from "@/components/homepage/trending-ideas"
+import ProjectThumbnails from "@/components/homepage/project-thumbnails"
 import { checkSupabaseConnection } from "@/lib/supabase"
+import ModeToggle from "@/components/homepage/mode-toggle"
 
 export default function Home() {
   const [loading, setLoading] = useState(true)
@@ -52,16 +53,7 @@ export default function Home() {
             </p>
           </div>
         )}
-        <div className="w-full max-w-3xl mx-auto mt-6 flex justify-center">
-          <div className="bg-gray-100 p-1 rounded-lg inline-flex">
-            <button className="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-purple-600 shadow-sm">
-              New Idea
-            </button>
-            <button className="px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900">
-              Existing Project
-            </button>
-          </div>
-        </div>
+        <ModeToggle />
         <IdeaInput />
         <TrendingIdeas />
         <ProjectThumbnails />
