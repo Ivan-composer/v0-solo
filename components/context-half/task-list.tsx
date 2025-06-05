@@ -25,53 +25,20 @@ import {
 import type { JSX } from "react/jsx-runtime"
 import { TaskListPopover, TaskListPopoverContent, TaskListPopoverTrigger } from "./tasklistpopover"
 
-// Add a new type for Sprint at the top of the file, after the existing imports
-type Sprint = {
-  number: number
-  name: string
-  tasks: Task[]
-}
-
-// Define TaskGroup type
-type TaskGroup = {
-  id: string
-  name: string
-  tasks: Task[]
-}
-
 interface TaskListProps {
-  projectStage: "ideation" | "development"
+  projectStage?: "ideation" | "development"
 }
 
-export default function TaskList({ projectStage }: TaskListProps) {
+export default function TaskList({ projectStage = "ideation" }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [subtasks, setSubtasks] = useState<{ [key: number]: Task[] }>({})
   const [loading, setLoading] = useState(true)
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null)
-  const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([])
-  const [viewMode, setViewMode] = useState<"map" | "list">("map")
-  const [expandedSprints, setExpandedSprints] = useState<Record<number, boolean>>({})
-
-  // Determine if we're in post-idea stage (development)
-  const isPostIdea = projectStage === "development"
-
-  // Position mapping for S-shaped layout
-  const positionMap = {
-    "far-left": "calc(50% - 200px)",
-    left: "calc(50% - 100px)",
-    center: "50%",
-    right: "calc(50% + 100px)",
-    "far-right": "calc(50% + 200px)",
-  }
 
   const loadTasks = useCallback(async () => {
     setLoading(true)
     try {
       const tasksData = await getAllTasks()
-
-      // Log the tasks to see what we're getting
-      console.log("Loaded tasks:", tasksData)
-
       setTasks(tasksData)
 
       // Find the active task (first in-progress task, or first available planned task)
@@ -93,15 +60,6 @@ export default function TaskList({ projectStage }: TaskListProps) {
         subtasksData[task.task_id] = await getSubtasks(task.task_id)
       }
       setSubtasks(subtasksData)
-
-      // Initialize all sprints as expanded
-      const initialExpandedState: Record<number, boolean> = {}
-      const TASKS_PER_SPRINT = 3
-      const sprintCount = Math.ceil(tasksData.length / TASKS_PER_SPRINT)
-      for (let i = 1; i <= sprintCount; i++) {
-        initialExpandedState[i] = true
-      }
-      setExpandedSprints(initialExpandedState)
     } catch (error) {
       console.error("Error loading tasks:", error)
     } finally {
@@ -112,14 +70,6 @@ export default function TaskList({ projectStage }: TaskListProps) {
   useEffect(() => {
     loadTasks()
   }, [loadTasks])
-
-  // Toggle sprint expansion
-  const toggleSprintExpansion = (sprintNumber: number) => {
-    setExpandedSprints((prev) => ({
-      ...prev,
-      [sprintNumber]: !prev[sprintNumber],
-    }))
-  }
 
   // Updated function to use custom event instead of URL navigation
   const openTaskInChat = (taskId: number) => {
@@ -139,7 +89,21 @@ export default function TaskList({ projectStage }: TaskListProps) {
     )
   }
 
-  // Define task icons - updated with new icons for e-commerce tasks
+  if (tasks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <div className="text-center">
+          <Tag className="h-16 w-16 text-muted-foreground mb-4 mx-auto" />
+          <h3 className="text-lg font-medium mb-2">No tasks found</h3>
+          <p className="text-muted-foreground">
+            This project doesn't have any tasks yet. Tasks will appear here once they're created.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Define task icons
   const getTaskIcon = (task: Task) => {
     const iconMap: Record<string, JSX.Element> = {
       "Market Research": <FileText className="w-5 h-5" />,
@@ -156,7 +120,6 @@ export default function TaskList({ projectStage }: TaskListProps) {
       "Pricing Strategy": <Layers className="w-5 h-5" />,
       "Business Model": <FileText className="w-5 h-5" />,
       "Partnership Strategy": <Target className="w-5 h-5" />,
-      // New e-commerce task icons
       "Payment Gateway Integration": <CreditCard className="w-5 h-5" />,
       "Product Catalog Design": <Package className="w-5 h-5" />,
       "User Authentication System": <User className="w-5 h-5" />,
@@ -172,36 +135,6 @@ export default function TaskList({ projectStage }: TaskListProps) {
     return iconMap[task.title] || <Award className="w-5 h-5" />
   }
 
-  // Build the task dependency tree
-  const buildTaskTree = () => {
-    // Create a map for quick task lookup
-    const taskMap = new Map<number, Task>()
-    tasks.forEach((task) => taskMap.set(task.task_id, task))
-
-    // Find root tasks (tasks with no dependencies)
-    const rootTasks = tasks.filter((task) => !task.dependent_on_tasks || task.dependent_on_tasks.length === 0)
-
-    // Group tasks by what they depend on
-    const dependencyGroups = new Map<number, Task[]>()
-
-    tasks.forEach((task) => {
-      if (task.dependent_on_tasks && task.dependent_on_tasks.length > 0) {
-        // Group by the first dependency (for simplicity)
-        const dependsOnId = task.dependent_on_tasks[0]
-
-        if (!dependencyGroups.has(dependsOnId)) {
-          dependencyGroups.set(dependsOnId, [])
-        }
-
-        dependencyGroups.get(dependsOnId)?.push(task)
-      }
-    })
-
-    return { rootTasks, dependencyGroups, taskMap }
-  }
-
-  const { rootTasks, dependencyGroups, taskMap } = buildTaskTree()
-
   // Calculate progress for a task based on its subtasks
   const calculateProgress = (taskId: number): number => {
     const taskSubtasks = subtasks[taskId] || []
@@ -211,21 +144,17 @@ export default function TaskList({ projectStage }: TaskListProps) {
     return (completedSubtasks / taskSubtasks.length) * 100
   }
 
-  // Updated renderProgressCircle function with 5px stroke width
+  // Render progress circle
   const renderProgressCircle = (progress: number, size = 80, status: string) => {
-    // Use a 5px stroke width
-    const strokeWidth = 5 // Changed from 12px to 5px for a more balanced look
-
-    // Use a simple radius calculation that ensures the circle is visible
+    const strokeWidth = 5
     const radius = size / 2 - strokeWidth / 2 - 2
-
     const circumference = 2 * Math.PI * radius
     const strokeDashoffset = circumference - (progress / 100) * circumference
 
     // Set color based on status
     let progressColor = "#9CA3AF" // Default gray
     if (status === "done") {
-      progressColor = "#A7D8F0" // Changed from blue to #A7D8F0
+      progressColor = "#A7D8F0"
     } else if (status === "in_progress") {
       progressColor = "#F97316" // Orange for in-progress tasks
     }
@@ -233,10 +162,9 @@ export default function TaskList({ projectStage }: TaskListProps) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="absolute">
-          {/* Background circle (gray line for remaining progress) */}
+          {/* Background circle */}
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E5E7EB" strokeWidth={strokeWidth / 2} />
-
-          {/* Progress circle (colored line for completed progress) */}
+          {/* Progress circle */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -255,12 +183,10 @@ export default function TaskList({ projectStage }: TaskListProps) {
     )
   }
 
-  // Render a task node - NO HOOKS INSIDE THIS FUNCTION
-  const renderTaskNode = (task: Task, sprintNumber?: number) => {
+  // Render a task node
+  const renderTaskNode = (task: Task) => {
     const isAvailable = isTaskAvailable(task, tasks)
     const progress = calculateProgress(task.task_id)
-    // Always show the progress circle, even if there are no subtasks
-    const hasSubtasks = true // Changed from: subtasks[task.task_id]?.length > 0
 
     return (
       <div className="flex flex-col items-center relative z-10">
@@ -268,19 +194,19 @@ export default function TaskList({ projectStage }: TaskListProps) {
         <TaskListPopover>
           <TaskListPopoverTrigger>
             <div className="relative w-20 h-20">
-              {/* Progress circle - always show it */}
+              {/* Progress circle */}
               {renderProgressCircle(progress, 80, task.status)}
 
               <button
                 type="button"
                 className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 absolute", // Changed back to w-16 h-16
+                  "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 absolute",
                   "bg-white text-gray-700 shadow-md hover:shadow-lg",
-                  "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20", // Center the button
+                  "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20",
                   task.status === "done"
-                    ? "border-0" // Remove border for completed tasks
+                    ? "border-0"
                     : task.task_id === activeTaskId
-                      ? "border-0" // Remove border for active tasks
+                      ? "border-0"
                       : !isAvailable
                         ? "opacity-70"
                         : "",
@@ -293,9 +219,9 @@ export default function TaskList({ projectStage }: TaskListProps) {
                     !isAvailable && task.status !== "done"
                       ? "text-gray-400"
                       : task.status === "done"
-                        ? "text-[#A7D8F0]" // Changed from blue to #A7D8F0
+                        ? "text-[#A7D8F0]"
                         : task.status === "in_progress"
-                          ? "text-orange-500" // Orange for in-progress tasks
+                          ? "text-orange-500"
                           : "text-gray-700",
                   )}
                 >
@@ -303,7 +229,7 @@ export default function TaskList({ projectStage }: TaskListProps) {
                 </div>
               </button>
 
-              {/* Glow effect for active tasks - changed to match status colors */}
+              {/* Glow effect for active tasks */}
               {task.status === "in_progress" && (
                 <div className="absolute inset-0 rounded-full bg-orange-500/10 blur-md z-0"></div>
               )}
@@ -342,7 +268,7 @@ export default function TaskList({ projectStage }: TaskListProps) {
                         <div
                           className={cn(
                             "w-3 h-3 rounded-full mr-2 flex-shrink-0",
-                            depTask?.status === "done" ? "bg-[#A7D8F0]" : "bg-gray-400", // Changed from blue to #A7D8F0
+                            depTask?.status === "done" ? "bg-[#A7D8F0]" : "bg-gray-400",
                           )}
                         ></div>
                         <span>{depTask?.title || `Task #${depId}`}</span>
@@ -362,7 +288,7 @@ export default function TaskList({ projectStage }: TaskListProps) {
                     <div
                       className={cn(
                         "w-4 h-4 rounded-full mr-2 flex-shrink-0",
-                        subtask.status === "done" ? "bg-[#A7D8F0]" : "bg-gray-300", // Changed from blue to #A7D8F0
+                        subtask.status === "done" ? "bg-[#A7D8F0]" : "bg-gray-300",
                       )}
                     ></div>
                     <span className="text-sm">{subtask.description}</span>
@@ -390,198 +316,50 @@ export default function TaskList({ projectStage }: TaskListProps) {
     )
   }
 
-  // Add a function to organize tasks into sprints
-  const organizeTasksIntoSprints = (tasks: Task[]): Sprint[] => {
-    const TASKS_PER_SPRINT = 3
-    const sprints: Sprint[] = []
-
-    // Sort tasks by their dependencies to ensure proper order
-    const sortedTasks = [...tasks].sort((a, b) => {
-      // If b depends on a, a should come first
-      if (b.dependent_on_tasks?.includes(a.task_id)) return -1
-      // If a depends on b, b should come first
-      if (a.dependent_on_tasks?.includes(b.task_id)) return 1
-      // Otherwise, sort by task_id
-      return a.task_id - b.task_id
-    })
-
-    // Group tasks into sprints
-    for (let i = 0; i < sortedTasks.length; i += TASKS_PER_SPRINT) {
-      const sprintTasks = sortedTasks.slice(i, i + TASKS_PER_SPRINT)
-      sprints.push({
-        number: Math.floor(i / TASKS_PER_SPRINT) + 1,
-        name: `Sprint ${Math.floor(i / TASKS_PER_SPRINT) + 1}`,
-        tasks: sprintTasks,
-      })
-    }
-
-    return sprints
-  }
-
-  // Find tasks by description or create a mock task if not found
-  const getTaskByTitle = (title: string, taskId?: number, dependsOn?: number) => {
-    const existingTask = tasks.find((t) => t.title === title)
-    if (existingTask) return existingTask
-
-    // Create a mock task if not found
-    return {
-      task_id: taskId || Math.floor(Math.random() * 1000) + 100, // Generate a random ID if not provided
-      title: title,
-      parent_task_id: null,
-      status: "planned",
-      dependent_on_tasks: dependsOn ? [dependsOn] : [],
-    } as Task
-  }
-
-  // Get task status color
-  const getTaskStatusColor = (task?: Task) => {
-    if (!task) return "bg-gray-300"
-    return task.status === "done" ? "bg-[#A7D8F0]" : task.status === "in_progress" ? "bg-orange-500" : "bg-gray-300" // Changed from blue to #A7D8F0
-  }
-
-  // If we're in post-idea stage (development), show a different UI
-
-  // Create a hardcoded list of all tasks to ensure we display everything
-  // This is a fallback in case the database tasks aren't loading properly
-  const allTasks = [
-    // Original tasks
-    getTaskByTitle("Market Research", 1),
-    getTaskByTitle("Target Audience Definition", 2, 1),
-    getTaskByTitle("Value Proposition", 3, 1),
-    getTaskByTitle("Competitive Analysis", 4, 2),
-    getTaskByTitle("Feature Prioritization", 5, 4),
-    // New e-commerce tasks
-    getTaskByTitle("Payment Gateway Integration", 10, 5),
-    getTaskByTitle("Product Catalog Design", 11, 3),
-    getTaskByTitle("User Authentication System", 12, 2),
-    getTaskByTitle("Shopping Cart Functionality", 13, 11),
-    getTaskByTitle("Order Management System", 14, 13),
-    getTaskByTitle("Inventory Management", 15, 14),
-    getTaskByTitle("Search & Filter Implementation", 16, 11),
-    getTaskByTitle("User Reviews & Ratings", 17, 12),
-    getTaskByTitle("Shipping Integration", 18, 14),
-    getTaskByTitle("Analytics Dashboard", 19, 14),
-  ]
-
-  // Use the combined list of tasks from the database and our hardcoded list
-  const combinedTasks = [...new Map([...tasks, ...allTasks].map((task) => [task.task_id, task])).values()]
-
   // Sort tasks by ID to ensure consistent order
-  const sortedTasks = combinedTasks.sort((a, b) => a.task_id - b.task_id)
+  const sortedTasks = tasks.sort((a, b) => a.task_id - b.task_id)
 
-  // Define the positions for the S-shaped layout
-  // Added more positions for the additional tasks with adjusted horizontal spacing
+  // Define positions for S-shaped layout
   const positions = [
-    { top: 0, left: "50%" }, // Center (Market Research)
-    { top: 140, left: "35%" }, // Left (Target Audience) - moved from 30% to 35%
-    { top: 140, left: "65%" }, // Right (Value Proposition) - moved from 70% to 65%
-    { top: 280, left: "50%" }, // Center (Competitive Analysis)
-    { top: 420, left: "35%" }, // Left (Feature Prioritization) - moved from 30% to 35%
-    { top: 560, left: "25%" }, // Far Left (Payment Gateway) - moved from 20% to 25%
-    { top: 700, left: "35%" }, // Left (Product Catalog) - moved from 30% to 35%
-    { top: 840, left: "50%" }, // Center (User Authentication)
-    { top: 980, left: "65%" }, // Right (Shopping Cart) - moved from 70% to 65%
-    { top: 1120, left: "75%" }, // Far Right (Order Management) - moved from 80% to 75%
-    { top: 1260, left: "65%" }, // Right (Inventory Management) - moved from 70% to 65%
-    { top: 1400, left: "50%" }, // Center (Search & Filter)
-    { top: 1540, left: "35%" }, // Left (User Reviews) - moved from 30% to 35%
-    { top: 1680, left: "25%" }, // Far Left (Shipping Integration) - moved from 20% to 25%
-    { top: 1820, left: "35%" }, // Left (Analytics Dashboard) - moved from 30% to 35%
+    { top: 0, left: "50%" },
+    { top: 140, left: "35%" },
+    { top: 140, left: "65%" },
+    { top: 280, left: "50%" },
+    { top: 420, left: "35%" },
+    { top: 560, left: "25%" },
+    { top: 700, left: "35%" },
+    { top: 840, left: "50%" },
+    { top: 980, left: "65%" },
+    { top: 1120, left: "75%" },
+    { top: 1260, left: "65%" },
+    { top: 1400, left: "50%" },
+    { top: 1540, left: "35%" },
+    { top: 1680, left: "25%" },
+    { top: 1820, left: "35%" },
   ]
 
-  // Calculate sprint boundaries
-  const calculateSprintBoundaries = () => {
-    const TASKS_PER_SPRINT = 3
-    const boundaries = []
-
-    for (let i = 1; i <= Math.ceil(sortedTasks.length / TASKS_PER_SPRINT); i++) {
-      const taskIndex = i * TASKS_PER_SPRINT - 1
-      if (taskIndex < positions.length) {
-        boundaries.push(positions[taskIndex].top + 110) // 110px below the last task in sprint
-      }
-    }
-
-    return boundaries
-  }
-
-  // Group tasks by sprint for the list view
-  const getTasksBySprintForList = () => {
-    const TASKS_PER_SPRINT = 3
-    const sprints = []
-
-    // Sort tasks by their dependencies to ensure proper order
-    const sortedTasks = [...combinedTasks].sort((a, b) => {
-      // If b depends on a, a should come first
-      if (b.dependent_on_tasks?.includes(a.task_id)) return -1
-      // If a depends on b, b should come first
-      if (a.dependent_on_tasks?.includes(b.task_id)) return 1
-      // Otherwise, sort by task_id
-      return a.task_id - b.task_id
-    })
-
-    // Group tasks into sprints
-    for (let i = 0; i < sortedTasks.length; i += TASKS_PER_SPRINT) {
-      const sprintTasks = sortedTasks.slice(i, i + TASKS_PER_SPRINT)
-      sprints.push({
-        number: Math.floor(i / TASKS_PER_SPRINT) + 1,
-        name: `Sprint ${Math.floor(i / TASKS_PER_SPRINT) + 1}`,
-        tasks: sprintTasks,
-      })
-    }
-
-    return sprints
-  }
-
-  // Original idea stage UI with S-shaped layout
   return (
     <div className="w-full h-full overflow-auto py-8">
-      {/* Stage indicator for ideation stage - updated color */}
+      {/* Stage indicator */}
       <div className="flex items-center justify-between mb-4 mx-4 bg-[#A7D8F0]/10 p-2 rounded-md">
         <div className="flex items-center">
           <Tag className="text-[#A7D8F0] mr-2" size={18} />
-          <span className="text-[#A7D8F0] text-sm">Ideation Stage View</span>
+          <span className="text-[#A7D8F0] text-sm">Task Overview</span>
         </div>
-        <div className="flex items-center space-x-2"></div>
       </div>
 
       <div className="relative flex flex-col items-center w-full">
-        // S-SHAPED TASK LAYOUT
-        <div className="relative" style={{ height: "2000px", width: "100%" }}>
-          {/* SVG for sprint dividers */}
-          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-            {/* Sprint dividers */}
-            <g className="sprint-dividers">
-              {calculateSprintBoundaries().map((boundary, index) => (
-                <g key={index}>
-                  <line
-                    x1="0%"
-                    y1={`${boundary}px`}
-                    x2="100%"
-                    y2={`${boundary}px`}
-                    stroke="#F0EEE6"
-                    strokeWidth="2"
-                    strokeDasharray="5,5"
-                  />
-                  <text x="10%" y={`${boundary - 5}px`} fill="#F0EEE6" fontSize="14" fontWeight="bold">
-                    Sprint {index + 1}
-                  </text>
-                </g>
-              ))}
-            </g>
-          </svg>
-
+        <div className="relative" style={{ height: `${Math.max(2000, sortedTasks.length * 150)}px`, width: "100%" }}>
           {/* Render tasks in S-shaped layout */}
           {sortedTasks.map((task, index) => {
-            if (index >= positions.length) return null // Skip if we don't have a position defined
-
-            const position = positions[index]
+            const position = positions[index % positions.length] || { top: index * 150, left: "50%" }
 
             return (
               <div
                 key={task.task_id}
                 className="absolute transition-all duration-500 ease-in-out"
                 style={{
-                  top: `${position.top}px`,
+                  top: `${position.top + Math.floor(index / positions.length) * 2000}px`,
                   left: position.left,
                   transform: "translateX(-50%)",
                 }}

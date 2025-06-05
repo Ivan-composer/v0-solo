@@ -1,55 +1,286 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { File, Folder, Tree, type TreeViewElement } from "@/components/ui/file-tree"
+import type React from "react"
+
+import { useEffect, useState, createContext, forwardRef, useCallback, useContext } from "react"
+import * as AccordionPrimitive from "@radix-ui/react-accordion"
+import { FileIcon, FolderIcon, FolderOpenIcon, ChevronDown, ChevronUp, FileText, Loader2 } from "lucide-react"
 import { getFilesForProject } from "@/lib/database"
-import { ChevronDown, ChevronUp, FileText, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/utils/cn"
 import type { File as FileType } from "@/lib/database"
 
-interface FilesTabProps {
-  projectId: string
+// File Tree Types and Components (moved from ui/file-tree.tsx)
+type TreeViewElement = {
+  id: string
+  name: string
+  isSelectable?: boolean
+  children?: TreeViewElement[]
 }
+
+type TreeContextProps = {
+  selectedId: string | undefined
+  expandedItems: string[] | undefined
+  indicator: boolean
+  handleExpand: (id: string) => void
+  selectItem: (id: string) => void
+  setExpandedItems?: React.Dispatch<React.SetStateAction<string[] | undefined>>
+  openIcon?: React.ReactNode
+  closeIcon?: React.ReactNode
+  direction: "rtl" | "ltr"
+}
+
+const TreeContext = createContext<TreeContextProps | null>(null)
+
+const useTree = () => {
+  const context = useContext(TreeContext)
+  if (!context) {
+    throw new Error("useTree must be used within a TreeProvider")
+  }
+  return context
+}
+
+interface TreeViewComponentProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+type Direction = "rtl" | "ltr" | undefined
+
+type TreeViewProps = {
+  initialSelectedId?: string
+  indicator?: boolean
+  elements?: TreeViewElement[]
+  initialExpandedItems?: string[]
+  openIcon?: React.ReactNode
+  closeIcon?: React.ReactNode
+} & TreeViewComponentProps
+
+const Tree = forwardRef<HTMLDivElement, TreeViewProps>(
+  (
+    {
+      className,
+      elements,
+      initialSelectedId,
+      initialExpandedItems,
+      children,
+      indicator = true,
+      openIcon,
+      closeIcon,
+      dir,
+      ...props
+    },
+    ref,
+  ) => {
+    const [selectedId, setSelectedId] = useState<string | undefined>(initialSelectedId)
+    const [expandedItems, setExpandedItems] = useState<string[] | undefined>(initialExpandedItems)
+
+    const selectItem = useCallback((id: string) => {
+      setSelectedId(id)
+    }, [])
+
+    const handleExpand = useCallback((id: string) => {
+      setExpandedItems((prev) => {
+        if (prev?.includes(id)) {
+          return prev.filter((item) => item !== id)
+        }
+        return [...(prev ?? []), id]
+      })
+    }, [])
+
+    const expandSpecificTargetedElements = useCallback((elements?: TreeViewElement[], selectId?: string) => {
+      if (!elements || !selectId) return
+      const findParent = (currentElement: TreeViewElement, currentPath: string[] = []) => {
+        const isSelectable = currentElement.isSelectable ?? true
+        const newPath = [...currentPath, currentElement.id]
+        if (currentElement.id === selectId) {
+          if (isSelectable) {
+            setExpandedItems((prev) => [...(prev ?? []), ...newPath])
+          } else {
+            if (newPath.includes(currentElement.id)) {
+              newPath.pop()
+              setExpandedItems((prev) => [...(prev ?? []), ...newPath])
+            }
+          }
+          return
+        }
+        if (isSelectable && currentElement.children && currentElement.children.length > 0) {
+          currentElement.children.forEach((child) => {
+            findParent(child, newPath)
+          })
+        }
+      }
+      elements.forEach((element) => {
+        findParent(element)
+      })
+    }, [])
+
+    useEffect(() => {
+      if (initialSelectedId) {
+        expandSpecificTargetedElements(elements, initialSelectedId)
+      }
+    }, [initialSelectedId, elements])
+
+    const direction = dir === "rtl" ? "rtl" : "ltr"
+
+    return (
+      <TreeContext.Provider
+        value={{
+          selectedId,
+          expandedItems,
+          handleExpand,
+          selectItem,
+          setExpandedItems,
+          indicator,
+          openIcon,
+          closeIcon,
+          direction,
+        }}
+      >
+        <div className={cn("size-full", className)}>
+          <ScrollArea ref={ref} className="h-full relative px-2" dir={dir as Direction}>
+            <AccordionPrimitive.Root
+              {...props}
+              type="multiple"
+              defaultValue={expandedItems}
+              value={expandedItems}
+              className="flex flex-col gap-1"
+              onValueChange={(value) => setExpandedItems((prev) => [...(prev ?? []), value[0]])}
+              dir={dir as Direction}
+            >
+              {children}
+            </AccordionPrimitive.Root>
+          </ScrollArea>
+        </div>
+      </TreeContext.Provider>
+    )
+  },
+)
+
+Tree.displayName = "Tree"
+
+interface FolderComponentProps extends React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item> {}
+
+type FolderProps = {
+  expandedItems?: string[]
+  element: string
+  isSelectable?: boolean
+  isSelect?: boolean
+} & FolderComponentProps
+
+const Folder = forwardRef<HTMLDivElement, FolderProps & React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, element, value, isSelectable = true, isSelect, children, ...props }, ref) => {
+    const { direction, handleExpand, expandedItems, indicator, setExpandedItems, openIcon, closeIcon } = useTree()
+
+    return (
+      <AccordionPrimitive.Item {...props} value={value} className="relative overflow-hidden h-full ">
+        <AccordionPrimitive.Trigger
+          className={cn(`flex items-center gap-1 text-sm rounded-md`, className, {
+            "bg-muted rounded-md": isSelect && isSelectable,
+            "cursor-pointer": isSelectable,
+            "cursor-not-allowed opacity-50": !isSelectable,
+          })}
+          disabled={!isSelectable}
+          onClick={() => handleExpand(value)}
+        >
+          {expandedItems?.includes(value)
+            ? (openIcon ?? <FolderOpenIcon className="size-4" />)
+            : (closeIcon ?? <FolderIcon className="size-4" />)}
+          <span>{element}</span>
+        </AccordionPrimitive.Trigger>
+        <AccordionPrimitive.Content className="text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down relative overflow-hidden h-full">
+          {element && indicator && (
+            <div
+              dir={direction}
+              className={cn(
+                "h-full w-px bg-muted absolute left-1.5 rtl:right-1.5 py-3 rounded-md hover:bg-slate-300 duration-300 ease-in-out",
+              )}
+            />
+          )}
+          <AccordionPrimitive.Root
+            dir={direction}
+            type="multiple"
+            className="flex flex-col gap-1 py-1 ml-5 rtl:mr-5 "
+            defaultValue={expandedItems}
+            value={expandedItems}
+            onValueChange={(value) => {
+              setExpandedItems?.((prev) => [...(prev ?? []), value[0]])
+            }}
+          >
+            {children}
+          </AccordionPrimitive.Root>
+        </AccordionPrimitive.Content>
+      </AccordionPrimitive.Item>
+    )
+  },
+)
+
+Folder.displayName = "Folder"
+
+const File = forwardRef<
+  HTMLButtonElement,
+  {
+    value: string
+    handleSelect?: (id: string) => void
+    isSelectable?: boolean
+    isSelect?: boolean
+    fileIcon?: React.ReactNode
+  } & React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
+>(({ value, className, handleSelect, isSelectable = true, isSelect, fileIcon, children, ...props }, ref) => {
+  const { direction, selectedId, selectItem } = useTree()
+  const isSelected = isSelect ?? selectedId === value
+  return (
+    <AccordionPrimitive.Item value={value} className="relative">
+      <AccordionPrimitive.Trigger
+        ref={ref}
+        {...props}
+        dir={direction}
+        disabled={!isSelectable}
+        aria-label="File"
+        className={cn(
+          "flex items-center gap-1 cursor-pointer text-sm pr-1 rtl:pl-1 rtl:pr-0 rounded-md  duration-200 ease-in-out",
+          {
+            "bg-muted": isSelected && isSelectable,
+          },
+          isSelectable ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
+          className,
+        )}
+        onClick={() => selectItem(value)}
+      >
+        {fileIcon ?? <FileIcon className="size-4" />}
+        {children}
+      </AccordionPrimitive.Trigger>
+    </AccordionPrimitive.Item>
+  )
+})
+
+File.displayName = "File"
 
 // Helper function to organize files into a tree structure
 function organizeFilesIntoTree(files: FileType[]): TreeViewElement[] {
-  // Create a map to store folders
   const folderMap: Record<string, TreeViewElement> = {}
 
-  // Root element
   const root: TreeViewElement = {
     id: "root",
     name: "Project Files",
     children: [],
   }
 
-  // Add root to the map
   folderMap["root"] = root
 
-  // Process each file
-  files.forEach((file, index) => {
-    // Extract path components from storage_path
-    // Remove leading slash if present
+  files.forEach((file) => {
     const path = file.storage_path.startsWith("/") ? file.storage_path.substring(1) : file.storage_path
-
     const pathParts = path.split("/")
-
-    // The file name is the last part
     const fileName = file.file_name
 
-    // Start from the root
     let currentFolder = root
     let currentPath = "root"
 
-    // Create folder structure
     for (let i = 0; i < pathParts.length - 1; i++) {
       const folderName = pathParts[i]
-      if (!folderName) continue // Skip empty folder names
+      if (!folderName) continue
 
       const folderPath = `${currentPath}/${folderName}`
 
-      // Create folder if it doesn't exist
       if (!folderMap[folderPath]) {
         const newFolder: TreeViewElement = {
           id: folderPath,
@@ -57,20 +288,15 @@ function organizeFilesIntoTree(files: FileType[]): TreeViewElement[] {
           children: [],
         }
 
-        // Add to parent's children
         currentFolder.children = currentFolder.children || []
         currentFolder.children.push(newFolder)
-
-        // Add to map
         folderMap[folderPath] = newFolder
       }
 
-      // Move to this folder
       currentFolder = folderMap[folderPath]
       currentPath = folderPath
     }
 
-    // Add the file to the current folder
     currentFolder.children = currentFolder.children || []
     currentFolder.children.push({
       id: file.id,
@@ -80,6 +306,35 @@ function organizeFilesIntoTree(files: FileType[]): TreeViewElement[] {
   })
 
   return [root]
+}
+
+// Helper component to recursively render the tree
+function RenderTreeItem({
+  item,
+  onFileSelect,
+}: {
+  item: TreeViewElement
+  onFileSelect: (fileId: string) => void
+}) {
+  if (!item.children || item.children.length === 0) {
+    return (
+      <File value={item.id} onClick={() => onFileSelect(item.id)}>
+        <p>{item.name}</p>
+      </File>
+    )
+  }
+
+  return (
+    <Folder element={item.name} value={item.id}>
+      {item.children.map((child) => (
+        <RenderTreeItem key={child.id} item={child} onFileSelect={onFileSelect} />
+      ))}
+    </Folder>
+  )
+}
+
+interface FilesTabProps {
+  projectId: string
 }
 
 export default function FilesTab({ projectId }: FilesTabProps) {
@@ -92,7 +347,6 @@ export default function FilesTab({ projectId }: FilesTabProps) {
 
   useEffect(() => {
     async function loadFiles() {
-      // Validate projectId before making the call
       if (
         !projectId ||
         projectId === "undefined" ||
@@ -109,7 +363,6 @@ export default function FilesTab({ projectId }: FilesTabProps) {
         const projectFiles = await getFilesForProject(projectId)
         setFiles(projectFiles)
 
-        // Organize files into tree structure
         const tree = organizeFilesIntoTree(projectFiles)
         setFileTree(tree)
       } catch (err) {
@@ -123,7 +376,6 @@ export default function FilesTab({ projectId }: FilesTabProps) {
     loadFiles()
   }, [projectId])
 
-  // Handle file selection
   const handleFileSelect = (fileId: string) => {
     const selectedFile = files.find((file) => file.id === fileId)
     setSelectedFile(selectedFile || null)
@@ -193,7 +445,6 @@ export default function FilesTab({ projectId }: FilesTabProps) {
               <span>Created: {new Date(selectedFile.created_at).toLocaleDateString()}</span>
             </div>
 
-            {/* File preview based on mime type */}
             <div className="mt-4 border rounded-md p-4 bg-muted/30">
               {selectedFile.mime_type.startsWith("image/") ? (
                 <div className="flex justify-center">
@@ -225,30 +476,5 @@ export default function FilesTab({ projectId }: FilesTabProps) {
         )}
       </div>
     </div>
-  )
-}
-
-// Helper component to recursively render the tree
-function RenderTreeItem({
-  item,
-  onFileSelect,
-}: {
-  item: TreeViewElement
-  onFileSelect: (fileId: string) => void
-}) {
-  if (!item.children || item.children.length === 0) {
-    return (
-      <File value={item.id} onClick={() => onFileSelect(item.id)}>
-        <p>{item.name}</p>
-      </File>
-    )
-  }
-
-  return (
-    <Folder element={item.name} value={item.id}>
-      {item.children.map((child) => (
-        <RenderTreeItem key={child.id} item={child} onFileSelect={onFileSelect} />
-      ))}
-    </Folder>
   )
 }
