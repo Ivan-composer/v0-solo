@@ -27,7 +27,29 @@ import {
   type Task,
   getMessagesForTask,
 } from "@/lib/database"
-import { generateGrokResponse } from "@/lib/grok"
+
+// Add this function at the top of the file to replace the imported generateGrokResponse
+async function generateGrokResponse(conversationHistory: any[]) {
+  try {
+    const response = await fetch("/api/grok", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messages: conversationHistory }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.response || "I'm sorry, I couldn't generate a response at this time."
+  } catch (error) {
+    console.error("Error generating response:", error)
+    return "I'm sorry, I'm having trouble connecting right now. Please try again later."
+  }
+}
 
 // Add these keyframes for animations
 const fadeSlideInKeyframes = `

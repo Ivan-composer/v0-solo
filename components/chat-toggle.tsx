@@ -4,20 +4,12 @@ import { useEffect, useRef, useState } from "react"
 
 export default function ChatToggle({
   onToggle,
-  showFeatureChat = false,
-  showNewsChat = false,
-  onCloseFeatureChat,
-  onCloseNewsChat,
   currentMode = "task",
 }: {
-  onToggle: (mode: "master" | "task" | "feature" | "news") => void
-  showFeatureChat?: boolean
-  showNewsChat?: boolean
-  onCloseFeatureChat?: () => void
-  onCloseNewsChat?: () => void
-  currentMode?: "master" | "task" | "feature" | "news"
+  onToggle: (mode: "master" | "task") => void
+  currentMode?: "master" | "task"
 }) {
-  const handleToggle = (newMode: "master" | "task" | "feature" | "news") => {
+  const handleToggle = (newMode: "master" | "task") => {
     onToggle(newMode)
   }
 
@@ -53,7 +45,7 @@ export default function ChatToggle({
         width: buttonRect.width,
       })
     }
-  }, [currentMode, showFeatureChat, showNewsChat])
+  }, [currentMode])
 
   return (
     <div ref={containerRef} className="bg-gray-100 p-1 rounded-lg inline-flex relative">
@@ -88,26 +80,6 @@ export default function ChatToggle({
       >
         Task Chat
       </button>
-
-      {showFeatureChat && (
-        <button
-          onClick={onCloseFeatureChat}
-          className="px-4 py-2 rounded-md text-sm font-medium transition-colors text-purple-600 flex items-center relative z-10"
-        >
-          Feature Chat
-          <span className="ml-2 text-xs bg-gray-200 rounded-full w-5 h-5 flex items-center justify-center">×</span>
-        </button>
-      )}
-
-      {showNewsChat && (
-        <button
-          onClick={onCloseNewsChat}
-          className="px-4 py-2 rounded-md text-sm font-medium transition-colors text-purple-600 flex items-center relative z-10"
-        >
-          News Chat
-          <span className="ml-2 text-xs bg-gray-200 rounded-full w-5 h-5 flex items-center justify-center">×</span>
-        </button>
-      )}
     </div>
   )
 }

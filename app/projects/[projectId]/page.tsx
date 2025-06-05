@@ -10,14 +10,10 @@ import ResizableLayout from "@/components/resizable-layout"
 import { getAllTasks, createTask } from "@/lib/database"
 import { Menu } from "lucide-react"
 import { getSupabase, checkSupabaseConnection } from "@/lib/supabase"
-import FeatureChat from "@/components/feature-chat"
-import NewsChat from "@/components/news-chat"
 
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
-  // Add these new state variables to the existing state declarations at the top of the component
-  const [chatMode, setChatMode] = useState<"master" | "task" | "feature" | "news">("task")
-  const [activeFeatureId, setActiveFeatureId] = useState<number | null>(null)
-  const [activeNewsId, setActiveNewsId] = useState<number | null>(null)
+  // Simplified state - removed feature and news related states
+  const [chatMode, setChatMode] = useState<"master" | "task">("task")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dbConnected, setDbConnected] = useState(false)
@@ -54,7 +50,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
       setLoading(true)
       setError(null)
       try {
-        // Проверяем, что projectId определен и не равен "undefined"
+        // Check that projectId is defined and not "undefined"
         if (!params.projectId || params.projectId === "undefined") {
           setError("Invalid project ID. Please select a valid project.")
           setLoading(false)
@@ -69,7 +65,6 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
           setTaskId(tasks[0].id)
         } else {
           // If no tasks exist, create a default task for this project
-          // Примечание: здесь нужно будет добавить author_id, когда у нас будет аутентификация
           const defaultTask = await createTask(
             params.projectId,
             "Market Research",
@@ -124,7 +119,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     // Check if the project exists first
     async function checkProject() {
       try {
-        // Проверяем, что projectId определен и не равен "undefined"
+        // Check that projectId is defined and not "undefined"
         if (!params.projectId || params.projectId === "undefined") {
           setError("Invalid project ID. Please select a valid project.")
           setLoading(false)
@@ -132,7 +127,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         }
 
         const supabase = getSupabase()
-        // Используем правильное имя колонки 'id' вместо 'project_id'
+        // Use the correct column name 'id' instead of 'project_id'
         const { data, error: supabaseError } = await supabase
           .from("projects")
           .select("id")
@@ -180,26 +175,6 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     }
   }, [])
 
-  // Add event listener for the custom switch-to-news-chat event
-  useEffect(() => {
-    const handleSwitchToNewsChat = (event: Event) => {
-      const customEvent = event as CustomEvent
-      if (customEvent.detail && customEvent.detail.newsId) {
-        // Switch to the news chat
-        setActiveNewsId(customEvent.detail.newsId)
-        // Make sure we're in news chat mode
-        setChatMode("news")
-      }
-    }
-
-    document.addEventListener("switch-to-news-chat", handleSwitchToNewsChat)
-
-    // Clean up the event listener when component unmounts
-    return () => {
-      document.removeEventListener("switch-to-news-chat", handleSwitchToNewsChat)
-    }
-  }, [])
-
   const handleSwitchTask = (newTaskId: string | number) => {
     setTaskId(String(newTaskId))
   }
@@ -234,31 +209,6 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     }
   }, [])
 
-  // Add this function to handle feature chat activation
-  const handleOpenFeatureChat = (featureId: number) => {
-    setActiveFeatureId(featureId)
-    setChatMode("feature")
-  }
-
-  // Add this function to handle feature chat closure
-  const handleCloseFeatureChat = () => {
-    setActiveFeatureId(null)
-    setChatMode("task")
-  }
-
-  // Add this function to handle opening the news chat
-  const handleOpenNewsChat = (newsId: number) => {
-    console.log("ProjectPage: handleOpenNewsChat called with newsId:", newsId)
-    setActiveNewsId(newsId)
-    setChatMode("news")
-  }
-
-  // Add this function to handle closing the news chat
-  const handleCloseNewsChat = () => {
-    setActiveNewsId(null)
-    setChatMode("task")
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -287,18 +237,11 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     )
   }
 
-  // Modify the leftContent variable to include feature chat
+  // Simplified left content - removed feature and news chat
   const leftContent = (
     <div className="flex flex-col h-full">
       <div className="h-[64px] p-4 border-b border-gray-200 flex justify-center items-center">
-        <ChatToggle
-          onToggle={(mode) => setChatMode(mode)}
-          showFeatureChat={chatMode === "feature"}
-          showNewsChat={chatMode === "news"}
-          onCloseFeatureChat={handleCloseFeatureChat}
-          onCloseNewsChat={handleCloseNewsChat}
-          currentMode={chatMode} // Add this prop to pass the current mode
-        />
+        <ChatToggle onToggle={(mode) => setChatMode(mode as "master" | "task")} currentMode={chatMode} />
       </div>
 
       <div className="flex-1 overflow-hidden">
@@ -308,32 +251,6 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
             onSwitchTask={(taskId) => {
               setTaskId(taskId)
               setChatMode("task")
-            }}
-          />
-        ) : chatMode === "feature" && activeFeatureId ? (
-          <FeatureChat
-            featureId={activeFeatureId}
-            onBack={handleCloseFeatureChat}
-            onFeatureUpdated={() => {
-              // Refresh backlog data when feature is updated
-              const projectContext = document.querySelector('[data-component="project-context"]')
-              if (projectContext) {
-                const event = new CustomEvent("refresh-backlog")
-                projectContext.dispatchEvent(event)
-              }
-            }}
-          />
-        ) : chatMode === "news" && activeNewsId ? (
-          <NewsChat
-            newsId={activeNewsId}
-            onBack={handleCloseNewsChat}
-            onStatusChange={async () => {
-              // Refresh news data when status changes
-              const projectContext = document.querySelector('[data-component="project-context"]')
-              if (projectContext) {
-                const event = new CustomEvent("refresh-news")
-                projectContext.dispatchEvent(event)
-              }
             }}
           />
         ) : taskId && taskId !== "undefined" ? (
@@ -371,18 +288,12 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   // Right content with project context
   const rightContent = (
     <div className="h-full flex flex-col" data-component="project-context">
-      <ProjectContext
-        projectId={params.projectId}
-        onOpenFeatureChat={handleOpenFeatureChat}
-        onOpenNewsChat={handleOpenNewsChat}
-      />
+      <ProjectContext projectId={params.projectId} />
     </div>
   )
 
   return (
     <div className="flex h-screen">
-      {/* Removed the "Running in demo mode" notification banner */}
-
       {/* Sidebar trigger area */}
       <div className="fixed top-0 left-0 h-full w-2 z-20" onMouseEnter={handleMouseEnterSidebar}></div>
 

@@ -8,15 +8,12 @@ import TaskList from "./task-list"
 import DashboardTab from "./dashboard-tab"
 import FilesTab from "./files-tab"
 import HomeTab from "./home-tab"
-import BacklogTab from "./backlog-tab"
-import NewsTab from "./news-tab"
 
 interface TabManagerProps {
-  onOpenFeatureChat?: (featureId: number) => void
-  onOpenNewsChat?: (newsId: number) => void
+  projectStage: "ideation" | "development"
 }
 
-export default function TabManager({ onOpenFeatureChat, onOpenNewsChat }: TabManagerProps) {
+export default function TabManager({ projectStage }: TabManagerProps) {
   const { tabs, activeTabId, closeTab, activateTab, addHomeTab, initializeTabs } = useTabs()
   const initializedRef = useRef(false)
 
@@ -30,13 +27,13 @@ export default function TabManager({ onOpenFeatureChat, onOpenNewsChat }: TabMan
   useEffect(() => {
     if (!initializedRef.current) {
       try {
-        initializeTabs("ideation")
+        initializeTabs(projectStage)
         initializedRef.current = true
       } catch (error) {
         console.error("Error initializing tabs:", error)
       }
     }
-  }, [initializeTabs])
+  }, [initializeTabs, projectStage])
 
   // Update hover indicator
   useEffect(() => {
@@ -104,20 +101,6 @@ export default function TabManager({ onOpenFeatureChat, onOpenNewsChat }: TabMan
         return <DashboardTab />
       case "files":
         return <FilesTab projectId={projectId} />
-      case "news":
-        return (
-          <NewsTab
-            projectId={projectId}
-            onOpenNewsChat={(newsId) => {
-              console.log(`TabManager: Opening chat for news item: ${newsId}`)
-              if (onOpenNewsChat) {
-                onOpenNewsChat(newsId)
-              }
-            }}
-          />
-        )
-      case "backlog":
-        return <BacklogTab onOpenFeatureChat={onOpenFeatureChat} />
       default:
         return <TaskList />
     }

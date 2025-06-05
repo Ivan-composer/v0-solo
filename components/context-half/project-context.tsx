@@ -8,17 +8,14 @@ import { Pencil } from "lucide-react"
 
 interface ProjectContextProps {
   projectId: string
-  onOpenFeatureChat?: (featureId: number) => void
-  onOpenNewsChat?: (newsId: number) => void
 }
 
-export default function ProjectContext({ projectId, onOpenFeatureChat, onOpenNewsChat }: ProjectContextProps) {
+export default function ProjectContext({ projectId }: ProjectContextProps) {
   const [project, setProject] = useState<any>({ name: `Project ${projectId}`, status: "active" })
   const [loading, setLoading] = useState(true)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
 
   async function updateProjectName(name: string) {
-    // Renamed parameter
     try {
       // Pass projectId directly (it's a string UUID) and use { name }
       await updateProject(projectId, { name })
@@ -44,39 +41,7 @@ export default function ProjectContext({ projectId, onOpenFeatureChat, onOpenNew
     }
 
     loadProject()
-
-    // Set up event listeners for refreshing data
-    const projectContextElement = document.querySelector('[data-component="project-context"]')
-    if (projectContextElement) {
-      const refreshBacklogHandler = () => {
-        console.log("Refreshing backlog data")
-        // You can add specific refresh logic here if needed
-      }
-
-      const refreshNewsHandler = () => {
-        console.log("Refreshing news data")
-        // You can add specific refresh logic here if needed
-      }
-
-      projectContextElement.addEventListener("refresh-backlog", refreshBacklogHandler)
-      projectContextElement.addEventListener("refresh-news", refreshNewsHandler)
-
-      return () => {
-        projectContextElement.removeEventListener("refresh-backlog", refreshBacklogHandler)
-        projectContextElement.removeEventListener("refresh-news", refreshNewsHandler)
-      }
-    }
   }, [projectId])
-
-  const handleOpenNewsChat = (newsId: number) => {
-    // Just pass the ID up to the parent component
-    if (onOpenNewsChat) {
-      onOpenNewsChat(newsId)
-    }
-
-    // Do NOT change the active tab here
-    // Do NOT set any local state that would change the view
-  }
 
   if (loading) {
     return (
@@ -114,7 +79,7 @@ export default function ProjectContext({ projectId, onOpenFeatureChat, onOpenNew
       </div>
       <div className="flex-1 overflow-auto">
         <TabProvider projectId={projectId}>
-          <TabManager projectStage="ideation" onOpenFeatureChat={onOpenFeatureChat} onOpenNewsChat={onOpenNewsChat} />
+          <TabManager projectStage="ideation" />
         </TabProvider>
       </div>
     </div>

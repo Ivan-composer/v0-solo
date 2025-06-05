@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 
-export type TabType = "home" | "tasks" | "dashboard" | "files" | "news" | "backlog"
+export type TabType = "home" | "tasks" | "dashboard" | "files"
 
 interface Tab {
   id: string
@@ -30,17 +30,6 @@ interface TabProviderProps {
 }
 
 export function TabProvider({ children, projectId }: TabProviderProps) {
-  // Define default tabs but don't set them yet
-  const defaultIdeationTabs = [
-    { id: `tasks-${projectId}`, title: "Task List", content: "tasks" as TabType, isDefault: true },
-    { id: `dashboard-${projectId}`, title: "Dashboard", content: "dashboard" as TabType, isDefault: true },
-    { id: `files-${projectId}`, title: "Files", content: "files" as TabType, isDefault: true }, // Changed from "PRD" to "Files"
-  ]
-
-  const defaultDevelopmentTabs = [
-    { id: `home-${projectId}`, title: "Home", content: "home" as TabType, isDefault: true },
-  ]
-
   // Start with empty tabs
   const [tabs, setTabs] = useState<Tab[]>([])
   const [activeTabId, setActiveTabId] = useState<string>("")
@@ -54,7 +43,7 @@ export function TabProvider({ children, projectId }: TabProviderProps) {
       const defaultIdeationTabs = [
         { id: `tasks-${projectId}`, title: "Task List", content: "tasks" as TabType, isDefault: true },
         { id: `dashboard-${projectId}`, title: "Dashboard", content: "dashboard" as TabType, isDefault: true },
-        { id: `files-${projectId}`, title: "Files", content: "files" as TabType, isDefault: true }, // Changed from "PRD" to "Files"
+        { id: `files-${projectId}`, title: "Files", content: "files" as TabType, isDefault: true },
       ]
 
       const defaultDevelopmentTabs = [
