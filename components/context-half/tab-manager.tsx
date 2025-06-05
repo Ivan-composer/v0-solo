@@ -5,7 +5,6 @@ import { useTabs } from "./tab-context"
 import { X, Plus } from "lucide-react"
 import { cn } from "@/utils/cn"
 import TaskList from "./task-list"
-import DashboardTab from "./dashboard-tab"
 import FilesTab from "./files-tab"
 import HomeTab from "./home-tab"
 
@@ -97,8 +96,6 @@ export default function TabManager({ projectStage }: TabManagerProps) {
         return <HomeTab />
       case "tasks":
         return <TaskList />
-      case "dashboard":
-        return <DashboardTab />
       case "files":
         return <FilesTab projectId={projectId} />
       default:

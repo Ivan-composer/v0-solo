@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 
-export type TabType = "home" | "tasks" | "dashboard" | "files"
+export type TabType = "home" | "tasks" | "files"
 
 interface Tab {
   id: string
@@ -42,7 +42,6 @@ export function TabProvider({ children, projectId }: TabProviderProps) {
 
       const defaultIdeationTabs = [
         { id: `tasks-${projectId}`, title: "Task List", content: "tasks" as TabType, isDefault: true },
-        { id: `dashboard-${projectId}`, title: "Dashboard", content: "dashboard" as TabType, isDefault: true },
         { id: `files-${projectId}`, title: "Files", content: "files" as TabType, isDefault: true },
       ]
 
