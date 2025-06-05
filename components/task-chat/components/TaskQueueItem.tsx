@@ -7,31 +7,33 @@ import type { Task } from "@/lib/database"
 
 interface TaskQueueItemProps {
   task: Task
-  index: number
-  totalTasks: number
   isActive: boolean
-  isCompleted: boolean
-  onClick: (taskId: number) => void
+  isFirst: boolean
+  isLast: boolean
+  position: string
+  onSelect?: (taskId: number) => void
 }
 
-const TaskQueueItem = React.memo(({ task, index, totalTasks, isActive, isCompleted, onClick }: TaskQueueItemProps) => {
+const TaskQueueItem = React.memo(({ task, isActive, isFirst, isLast, position, onSelect }: TaskQueueItemProps) => {
+  const isCompleted = task.status === "done"
+
   return (
     <li
       className={cn(
         "py-0 px-4 border-t border-b border-gray-200 flex justify-between items-center cursor-pointer h-[4rem] min-h-[4rem]",
-        index === 0 && "border-t",
-        index === totalTasks - 1 && "border-b",
+        isFirst && "border-t",
+        isLast && "border-b",
         isActive ? "bg-[#FFD180]/20 hover:bg-[#FFD180]/30" : "hover:bg-gray-50",
         isCompleted && "bg-[#F0FDF4]/50 hover:bg-[#F0FDF4]/70",
       )}
       onClick={() => {
-        if (!isActive) {
-          onClick(task.id)
+        if (!isActive && onSelect) {
+          onSelect(task.id)
         }
       }}
     >
       <div className="flex items-center">
-        <span className="text-sm font-medium text-gray-500 mr-3">{`${index + 1}/${totalTasks}`}</span>
+        <span className="text-sm font-medium text-gray-500 mr-3">{position}</span>
         <span
           className={cn(
             "text-base",

@@ -7,7 +7,7 @@ import type { Message } from "@/lib/database"
 
 interface MessageItemProps {
   message: Message
-  onCopy: (text: string, messageId: number) => void
+  onCopy?: (text: string, messageId: number) => void
   onRate?: (messageId: number, rating: "up" | "down") => void
   onRetry?: (messageId: number) => void
 }
@@ -21,7 +21,7 @@ const MessageItem = React.memo(({ message, onCopy, onRate, onRetry }: MessageIte
       await navigator.clipboard.writeText(message.content)
       setCopiedMessage(message.message_id)
       setTimeout(() => setCopiedMessage(null), 2000)
-      onCopy(message.content, message.message_id)
+      onCopy?.(message.content, message.message_id)
     } catch (err) {
       console.error("Failed to copy text: ", err)
     }

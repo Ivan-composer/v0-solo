@@ -4,25 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react"
 
 export function useScrollManager() {
   const [isScrolledUp, setIsScrolledUp] = useState(false)
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [])
-
-  const handleScrollToBottom = useCallback(() => {
-    setShouldAutoScroll(true)
-    scrollToBottom()
-  }, [scrollToBottom])
-
-  // Only scroll to bottom when shouldAutoScroll is true
-  useEffect(() => {
-    if (shouldAutoScroll) {
-      scrollToBottom()
-    }
-  }, [shouldAutoScroll, scrollToBottom])
 
   // Set up scroll event listener
   useEffect(() => {
@@ -67,10 +54,8 @@ export function useScrollManager() {
 
   return {
     isScrolledUp,
-    shouldAutoScroll,
-    setShouldAutoScroll,
     contentRef,
     messagesEndRef,
-    handleScrollToBottom,
+    scrollToBottom,
   }
 }
