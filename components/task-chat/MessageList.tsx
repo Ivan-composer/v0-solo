@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { memo } from "react"
-import MessageItem from "./components/MessageItem"
+import MessageItem from "./MessageItem"
 import type { Message } from "@/lib/database"
 
 interface MessageListProps {
