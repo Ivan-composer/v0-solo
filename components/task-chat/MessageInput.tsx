@@ -16,37 +16,38 @@ const MessageInput = memo(
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
       if (value.trim()) {
-        onSend(value.trim())
+        onSend(value)
+        onChange("")
       }
     }
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault()
-        handleSubmit(e)
+        if (value.trim()) {
+          onSend(value)
+          onChange("")
+        }
       }
     }
 
     return (
-      <form onSubmit={handleSubmit} className="mb-4">
-        <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg bg-white">
-          <input
-            ref={ref}
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            className="flex-1 outline-none text-gray-700"
-          />
-          <button
-            type="submit"
-            disabled={!value.trim()}
-            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Send size={16} />
-          </button>
-        </div>
+      <form onSubmit={handleSubmit} className="flex mt-3">
+        <input
+          ref={ref}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type your message..."
+          className="flex-1 px-4 py-2 border border-border rounded-l-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-background text-foreground"
+        />
+        <button
+          type="submit"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-r-md hover:bg-primary/90 transition-colors"
+        >
+          <Send size={18} />
+        </button>
       </form>
     )
   }),
