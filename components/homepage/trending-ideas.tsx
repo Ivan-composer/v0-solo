@@ -1,4 +1,3 @@
-// This file has been moved to components/homepage/trending-ideas.tsx
 export default function TrendingIdeas() {
   const trendingIdeas = [
     {
