@@ -2,7 +2,7 @@
 
 import React from "react"
 import type { Task, Message } from "@/lib/database"
-import MessageList from "../MessageList"
+import MessageList from "./MessageList"
 
 interface ActiveSubtaskViewProps {
   subtask: Task

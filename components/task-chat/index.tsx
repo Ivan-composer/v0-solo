@@ -18,7 +18,7 @@ import MessageList from "./MessageList"
 import QuickActions from "./QuickActions"
 import MessageInput from "./MessageInput"
 import NextTaskButton from "./NextTaskButton"
-import ActiveSubtaskView from "./components/ActiveSubtaskView"
+import ActiveSubtaskView from "./ActiveSubtaskView"
 
 // Define a type for the onTaskActivity callback
 type TaskActivityCallback = (taskId: string, taskName: string, activityText: string) => void
@@ -63,6 +63,10 @@ const TaskChat = React.memo<TaskChatProps>(({ taskId, onSwitchTask, onTaskActivi
   // Callbacks
   const handleToggleExpand = useCallback(() => {
     setExpanded((prev) => !prev)
+  }, [])
+
+  const handleCloseQueue = useCallback(() => {
+    setExpanded(false)
   }, [])
 
   const handleSubtaskClick = useCallback(
@@ -240,7 +244,14 @@ const TaskChat = React.memo<TaskChatProps>(({ taskId, onSwitchTask, onTaskActivi
         />
 
         {/* Task Queue */}
-        {expanded && <TaskQueue tasks={taskQueue} activeTaskId={taskId} onSelectTask={handleSelectTask} />}
+        {expanded && (
+          <TaskQueue
+            tasks={taskQueue}
+            activeTaskId={taskId}
+            onSelectTask={handleSelectTask}
+            onClose={handleCloseQueue}
+          />
+        )}
       </div>
 
       {/* Fixed Subtask Header */}

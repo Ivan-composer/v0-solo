@@ -1,7 +1,7 @@
 "use client"
 
 import { memo } from "react"
-import SubtaskItem from "./components/SubtaskItem"
+import SubtaskItem from "./SubtaskItem"
 import type { Task } from "@/lib/database"
 
 interface SubtaskListProps {
