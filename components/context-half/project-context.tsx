@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { TabProvider } from "./tab-context"
-import TabManager from "./tab-manager"
+import { TabProvider, TabManager } from "./tabs"
 import { getProject, updateProject } from "@/lib/database"
 import { Pencil } from "lucide-react"
 
