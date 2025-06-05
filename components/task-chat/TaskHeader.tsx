@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import type { Task } from "@/lib/database"
 
@@ -11,38 +12,25 @@ interface TaskHeaderProps {
   onToggleExpand: () => void
 }
 
-export default function TaskHeader({ task, position, progress, expanded, onToggleExpand }: TaskHeaderProps) {
-  // Calculate the circle properties
-  const size = 70
-  const strokeWidth = 5
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (progress / 100) * circumference
-
-  // Parse the position to get current and total tasks
-  const [current, total] = position.split("/").map((num) => Number.parseInt(num, 10))
-
-  // Replace the entire return statement with this updated version that uses a linear progress bar
-
+const TaskHeader = memo(function TaskHeader({ task, position, progress, expanded, onToggleExpand }: TaskHeaderProps) {
   return (
-    <div className="bg-background border-b border-gray-200 py-4 cursor-pointer z-10" onClick={onToggleExpand}>
-      <div className="flex items-center justify-between">
-        {/* Task description and sprint position */}
-        <div className="flex-grow">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold">{task.title}</h2>
-            <span className="text-sm text-gray-500 font-medium">Sprint {position}</span>
-          </div>
-
-          {/* Linear progress bar */}
-          <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
-            <div className="h-full bg-pink-300 rounded-full" style={{ width: `${progress}%` }}></div>
-          </div>
+    <div className="bg-background border-b border-gray-200 py-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-3">
+          <span className="text-sm text-gray-500">{position}</span>
+          <h1 className="text-lg font-semibold">{task.title}</h1>
         </div>
-
-        {/* Expand/collapse icon */}
-        <div className="flex-shrink-0 ml-4">{expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</div>
+        <button onClick={onToggleExpand} className="p-1 hover:bg-gray-100 rounded">
+          {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </button>
+      </div>
+      <div className="mt-2">
+        <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${progress}%` }}></div>
+        </div>
       </div>
     </div>
   )
-}
+})
+
+export default TaskHeader
