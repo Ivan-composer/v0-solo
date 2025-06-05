@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 
-export type TabType = "home" | "tasks" | "files"
+export type TabType = "tasks" | "files"
 
 interface Tab {
   id: string
@@ -40,18 +40,14 @@ export function TabProvider({ children, projectId }: TabProviderProps) {
     (stage: "ideation" | "development") => {
       if (initialized) return
 
-      const defaultIdeationTabs = [
+      // Both stages now use the same tabs since we only have tasks and files
+      const defaultTabs = [
         { id: `tasks-${projectId}`, title: "Task List", content: "tasks" as TabType, isDefault: true },
         { id: `files-${projectId}`, title: "Files", content: "files" as TabType, isDefault: true },
       ]
 
-      const defaultDevelopmentTabs = [
-        { id: `home-${projectId}`, title: "Home", content: "home" as TabType, isDefault: true },
-      ]
-
-      const initialTabs = stage === "ideation" ? defaultIdeationTabs : defaultDevelopmentTabs
-      setTabs(initialTabs)
-      setActiveTabId(initialTabs[0].id)
+      setTabs(defaultTabs)
+      setActiveTabId(defaultTabs[0].id)
       setInitialized(true)
     },
     [initialized, projectId],
@@ -70,7 +66,7 @@ export function TabProvider({ children, projectId }: TabProviderProps) {
         // Don't close if it's the only tab left
         if (prevTabs.length <= 1) return prevTabs
 
-        // Don't close default tabs in ideation mode
+        // Don't close default tabs
         const tab = prevTabs.find((t) => t.id === id)
         if (tab?.isDefault) return prevTabs
 
@@ -94,8 +90,9 @@ export function TabProvider({ children, projectId }: TabProviderProps) {
   }, [])
 
   const addHomeTab = useCallback(() => {
-    const id = `home-${Date.now()}`
-    const newTab = { id, title: "Home", content: "home" as TabType }
+    // Since we don't have a home tab anymore, we'll add a tasks tab instead
+    const id = `tasks-${Date.now()}`
+    const newTab = { id, title: "Task List", content: "tasks" as TabType }
     setTabs((prevTabs) => [...prevTabs, newTab])
     setActiveTabId(id)
   }, [])
