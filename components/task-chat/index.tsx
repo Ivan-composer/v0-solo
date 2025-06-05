@@ -19,11 +19,33 @@ import QuickActions from "./QuickActions"
 import MessageInput from "./MessageInput"
 import { ArrowRight, Lock, ChevronUp, ChevronDown } from "lucide-react"
 // Add these imports at the top
-import { generateGrokResponse } from "@/lib/grok"
 import { cn } from "@/utils/cn"
 
 // Define a type for the onTaskActivity callback
 type TaskActivityCallback = (taskId: number, taskName: string, activityText: string) => void
+
+// Local function to generate AI responses
+async function generateGrokResponse(conversationHistory: Array<{ role: string; content: string }>) {
+  try {
+    const response = await fetch("/api/grok", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messages: conversationHistory }),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to get AI response")
+    }
+
+    const data = await response.json()
+    return data.message || "I'm here to help! What would you like to work on?"
+  } catch (error) {
+    console.error("Error calling AI API:", error)
+    return "I'm having trouble connecting right now. Let's continue our conversation when the connection is restored."
+  }
+}
 
 export default function TaskChat({
   taskId,
@@ -278,7 +300,7 @@ export default function TaskChat({
     return subtasks.find((subtask) => subtask.id === activeSubtask)
   }
 
-  // Update the handleSendMessage function to use Grok
+  // Update the handleSendMessage function to use the local AI function
   const handleSendMessage = async (text: string) => {
     if (!taskId || taskId === "undefined" || !text.trim() || !currentTask) return
 
@@ -327,7 +349,7 @@ export default function TaskChat({
         // Show loading indicator
         setIsLoading(true)
 
-        // Prepare conversation history for Grok
+        // Prepare conversation history for AI
         const conversationHistory = messages
           .filter((msg) => msg.role === "user" || msg.role === "agent")
           .slice(-10) // Only use the last 10 messages for context
@@ -358,13 +380,13 @@ export default function TaskChat({
         })
 
         try {
-          // Get response from Grok
-          const grokResponse = await generateGrokResponse(conversationHistory)
+          // Get response from AI
+          const aiResponse = await generateGrokResponse(conversationHistory)
 
           // Create and add the assistant message with correct parameter order
           const assistantMessage = await createMessage(
             targetTaskId, // taskId (either main task or subtask)
-            grokResponse, // content
+            aiResponse, // content
             null, // authorId (null for AI)
             "agent", // role
           )
@@ -373,7 +395,7 @@ export default function TaskChat({
             setMessages((prevMessages) => [...prevMessages, assistantMessage])
           }
         } catch (error) {
-          console.error("Error getting Grok response:", error)
+          console.error("Error getting AI response:", error)
           // Add an error message with correct parameter order
           const errorMessage = await createMessage(
             targetTaskId, // taskId (either main task or subtask)
