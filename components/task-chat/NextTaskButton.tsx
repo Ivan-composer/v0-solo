@@ -1,41 +1,65 @@
 "use client"
 
-import { ArrowRight } from "lucide-react"
-import type { Task } from "@/lib/database"
+import React, { useMemo } from "react"
+import { ArrowRight, Lock } from "lucide-react"
+import { isTaskAvailable, type Task } from "@/lib/database"
 
 interface NextTaskButtonProps {
-  currentTaskId: number | null | undefined
+  currentTaskId: string | null | undefined
   tasks: Task[]
-  onSwitchTask?: (taskId: number) => void
+  onSwitchTask?: (taskId: string) => void
 }
 
-export default function NextTaskButton({ currentTaskId, tasks, onSwitchTask }: NextTaskButtonProps) {
-  const handleNextTask = () => {
-    if (!currentTaskId || !onSwitchTask) return
+const NextTaskButton = React.memo<NextTaskButtonProps>(({ currentTaskId, tasks, onSwitchTask }) => {
+  const nextTask = useMemo(() => {
+    if (!currentTaskId || !tasks.length) return null
 
-    const currentIndex = tasks.findIndex((t) => t.task_id === currentTaskId)
-    if (currentIndex < tasks.length - 1) {
-      onSwitchTask(tasks[currentIndex + 1].task_id)
+    const currentIndex = tasks.findIndex((t) => t.id === currentTaskId)
+    if (currentIndex === -1) return null
+
+    // Find the next available task
+    for (let i = currentIndex + 1; i < tasks.length; i++) {
+      if (isTaskAvailable(tasks[i], tasks)) {
+        return { task: tasks[i], isAvailable: true }
+      }
     }
-  }
 
-  // Find the next task in the queue
-  const currentIndex = currentTaskId ? tasks.findIndex((t) => t.task_id === currentTaskId) : -1
-  const nextTask = currentIndex >= 0 && currentIndex < tasks.length - 1 ? tasks[currentIndex + 1] : null
+    // If no available task found, show next task but mark as locked
+    if (currentIndex < tasks.length - 1) {
+      return { task: tasks[currentIndex + 1], isAvailable: false }
+    }
+
+    return null
+  }, [currentTaskId, tasks])
+
+  const handleNextTask = React.useCallback(() => {
+    if (!nextTask?.isAvailable || !onSwitchTask) return
+    onSwitchTask(nextTask.task.id)
+  }, [nextTask, onSwitchTask])
+
+  if (!nextTask) return null
 
   return (
     <div className="mt-4">
       <button
-        className="w-full flex items-center justify-between px-4 py-3 bg-secondary rounded-md hover:bg-secondary/80 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-secondary rounded-md hover:bg-secondary/80 transition-colors disabled:opacity-50"
         onClick={handleNextTask}
-        disabled={!nextTask}
+        disabled={!nextTask.isAvailable}
       >
         <span className="text-muted-foreground">Next Task</span>
         <div className="flex items-center text-foreground">
-          <span>{nextTask ? nextTask.description : "No more tasks"}</span>
-          <ArrowRight size={18} className="ml-2" />
+          <span>{nextTask.task.title || nextTask.task.description}</span>
+          {nextTask.isAvailable ? (
+            <ArrowRight size={18} className="ml-2" />
+          ) : (
+            <Lock size={18} className="ml-2 text-gray-400" />
+          )}
         </div>
       </button>
     </div>
   )
-}
+})
+
+NextTaskButton.displayName = "NextTaskButton"
+
+export default NextTaskButton
