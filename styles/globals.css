@@ -1,0 +1,438 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 60 33% 98%; /* #FAFAF8 */
+    --foreground: 0 0% 12%;
+    --card: 60 33% 98%; /* #FAFAF8 */
+    --card-foreground: 0 0% 12%;
+    --popover: 60 33% 98%; /* #FAFAF8 */
+    --popover-foreground: 0 0% 12%;
+    --primary: 200 74% 80%; /* #A7D8F0 */
+    --primary-foreground: 0 0% 12%;
+    --secondary: 36 33% 94%;
+    --secondary-foreground: 0 0% 12%;
+    --muted: 36 33% 94%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 36 33% 92%;
+    --accent-foreground: 0 0% 12%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 36 10% 90%;
+    --input: 36 10% 90%;
+    --ring: 36 5% 80%;
+    --radius: 0.5rem;
+    --pink: 0 100% 71%; /* #FF6B6B - changed from #F7C6D9 */
+  }
+
+  .dark {
+    --background: 220 14% 22%; /* #30343F */
+    --foreground: 60 33% 98%; /* #FAFAF8 */
+    --card: 220 14% 25%; /* Slightly lighter than background */
+    --card-foreground: 60 33% 98%; /* #FAFAF8 */
+    --popover: 220 14% 25%; /* Slightly lighter than background */
+    --popover-foreground: 60 33% 98%; /* #FAFAF8 */
+    --primary: 200 74% 80%; /* #A7D8F0 */
+    --primary-foreground: 220 14% 15%; /* Darker version of background for contrast */
+    --secondary: 220 14% 30%; /* Slightly lighter than card */
+    --secondary-foreground: 60 33% 98%; /* #FAFAF8 */
+    --muted: 220 14% 30%; /* Slightly lighter than card */
+    --muted-foreground: 36 10% 70%;
+    --accent: 220 14% 35%; /* Even lighter for accent backgrounds */
+    --accent-foreground: 60 33% 98%; /* #FAFAF8 */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 14% 35%; /* Similar to accent */
+    --input: 220 14% 35%; /* Similar to accent */
+    --ring: 200 74% 70%; /* Slightly darker primary for focus rings */
+    --pink: 0 100% 71%; /* #FF6B6B - changed from #F7C6D9 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-medium tracking-tight;
+  }
+
+  h1 {
+    @apply text-2xl;
+  }
+
+  h2 {
+    @apply text-xl;
+  }
+
+  h3 {
+    @apply text-lg;
+  }
+
+  code {
+    @apply bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+}
+
+.prose h1 {
+  @apply text-2xl font-bold mb-4;
+}
+
+.prose h2 {
+  @apply text-xl font-semibold mt-6 mb-3;
+}
+
+.prose h3 {
+  @apply text-lg font-medium mt-4 mb-2;
+}
+
+.prose p {
+  @apply mb-4;
+}
+
+.prose ul {
+  @apply list-disc pl-5 mb-4;
+}
+
+.prose li {
+  @apply mb-1;
+}
+
+/* Custom styles for the app */
+@layer components {
+  .code-block {
+    @apply bg-muted p-3 rounded-md font-mono text-sm overflow-x-auto;
+  }
+
+  .sidebar {
+    @apply bg-background border-r border-border;
+  }
+
+  .card {
+    @apply bg-card border border-border rounded-md shadow-sm;
+  }
+
+  .button-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-md;
+  }
+
+  .button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-md;
+  }
+
+  .input {
+    @apply bg-background border border-input rounded-md focus:ring-2 focus:ring-ring focus:border-transparent;
+  }
+
+  /* Hide scrollbar but allow scrolling */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
+
+/* Dark mode adjustments for specific components */
+.dark .prose {
+  @apply text-gray-200;
+}
+
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4,
+.dark .prose h5,
+.dark .prose h6 {
+  @apply text-gray-100;
+}
+
+.dark .prose a {
+  @apply text-blue-400;
+}
+
+.dark .prose strong {
+  @apply text-gray-100;
+}
+
+.dark .prose code {
+  @apply bg-gray-800 text-gray-200;
+}
+
+.dark .prose blockquote {
+  @apply border-gray-700 text-gray-300;
+}
+
+/* Ensure task list colors work well in dark mode */
+.dark .bg-[#F0FDF4] {
+  @apply bg-green-900;
+}
+
+.dark .bg-[#DCFCE7] {
+  @apply bg-green-800;
+}
+
+.dark .bg-[#FFD180] {
+  @apply bg-amber-700;
+}
+
+.dark .text-green-700 {
+  @apply text-green-400;
+}
+
+.dark .text-green-500 {
+  @apply text-green-400;
+}
+
+.dark .text-[#15803D] {
+  @apply text-green-400;
+}
+
+.dark .bg-green-50 {
+  @apply bg-green-900/30;
+}
+
+.dark .bg-blue-50 {
+  @apply bg-blue-900/30;
+}
+
+.dark .bg-yellow-50 {
+  @apply bg-yellow-900/30;
+}
+
+.dark .bg-red-50 {
+  @apply bg-red-900/30;
+}
+
+.dark .bg-purple-50 {
+  @apply bg-[#FF6B6B]/30;
+}
+
+.dark .bg-orange-50 {
+  @apply bg-orange-900/30;
+}
+
+.dark .bg-gray-50 {
+  @apply bg-gray-800;
+}
+
+.dark .bg-gray-100 {
+  @apply bg-gray-800;
+}
+
+.dark .bg-gray-200 {
+  @apply bg-gray-700;
+}
+
+.dark .bg-white {
+  @apply bg-gray-800;
+}
+
+.dark .border-gray-100 {
+  @apply border-gray-800;
+}
+
+.dark .border-gray-200 {
+  @apply border-gray-700;
+}
+
+.dark .border-gray-300 {
+  @apply border-gray-600;
+}
+
+.dark .text-gray-500 {
+  @apply text-gray-400;
+}
+
+.dark .text-gray-600 {
+  @apply text-gray-300;
+}
+
+.dark .text-gray-700 {
+  @apply text-gray-300;
+}
+
+.dark .text-gray-800 {
+  @apply text-gray-200;
+}
+
+.dark .text-gray-900 {
+  @apply text-gray-100;
+}
+
+.dark .shadow-sm {
+  @apply shadow-gray-900/50;
+}
+
+.dark .shadow-md {
+  @apply shadow-gray-900/50;
+}
+
+.dark .shadow-lg {
+  @apply shadow-gray-900/50;
+}
+
+.dark .shadow-xl {
+  @apply shadow-gray-900/50;
+}
+
+/* Direct dark mode overrides for specific elements */
+.dark {
+  background-color: #30343f;
+}
+
+.dark body,
+.dark .bg-background,
+.dark [class*="bg-white"],
+.dark [class*="bg-gray-50"],
+.dark [class*="bg-gray-100"] {
+  background-color: #30343f !important;
+  color: #fafaf8;
+}
+
+.dark .card,
+.dark .bg-card,
+.dark [class*="bg-gray-200"] {
+  background-color: #383e4d !important;
+}
+
+.dark .border,
+.dark [class*="border-gray"] {
+  border-color: #4a5169 !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #383e4d !important;
+  color: #fafaf8 !important;
+  border-color: #4a5169 !important;
+}
+
+.dark button:not([class*="bg-primary"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-yellow"]) {
+  background-color: #383e4d !important;
+  color: #fafaf8 !important;
+}
+
+.dark [class*="text-gray"] {
+  color: #d1d5db !important;
+}
+
+.dark .bg-primary {
+  background-color: #a7d8f0 !important;
+}
+
+.dark .text-primary {
+  color: #a7d8f0 !important;
+}
+
+.dark .bg-primary\/10,
+.dark .bg-primary\/20 {
+  background-color: rgba(167, 216, 240, 0.2) !important;
+}
+
+.dark .text-primary-foreground {
+  color: #30343f !important;
+}
+
+/* Replace purple with coral/red */
+.text-purple-500,
+.text-purple-600,
+.text-purple-700 {
+  color: #ff6b6b !important;
+}
+
+.bg-purple-500,
+.bg-purple-600,
+.bg-purple-700 {
+  background-color: #ff6b6b !important;
+}
+
+.border-purple-500,
+.border-purple-600,
+.border-purple-700 {
+  border-color: #ff6b6b !important;
+}
+
+/* Loading animation color updates */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.bg-gradient-to-r.from-purple-500,
+.bg-gradient-to-r.from-purple-600,
+.bg-gradient-to-r.from-purple-700 {
+  --tw-gradient-from: #ff6b6b var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(255 107 107 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.bg-gradient-to-r.to-pink-500,
+.bg-gradient-to-r.to-pink-600,
+.bg-gradient-to-r.to-pink-700 {
+  --tw-gradient-to: #ff6b6b var(--tw-gradient-to-position);
+}
+
+/* Directly target loading animation circles */
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+/* Ensure all loading animation circles use the coral/red color */
+.w-2.h-2.bg-primary.rounded-full.animate-bounce,
+.w-2.h-2.bg-purple-500.rounded-full.animate-bounce,
+.w-2.h-2.bg-purple-600.rounded-full.animate-bounce,
+.w-2.h-2.bg-purple-700.rounded-full.animate-bounce,
+.w-2.h-2.rounded-full.animate-bounce {
+  background-color: #ff6b6b !important;
+}
+
+/* Add popover animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+[data-state="open"][data-radix-popover-content] {
+  animation: fadeIn 0.2s ease-out;
+}

@@ -1,0 +1,167 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Bell, CheckSquare } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { getSupabase } from "@/lib/supabase"
+
+export default function ProjectThumbnails() {
+  const router = useRouter()
+  const [projects, setProjects] = useState([
+    {
+      id: "mock-uuid-1", // Example UUID
+      title: "E-commerce Platform",
+      description: "Online store for handmade products",
+      progress: 65,
+      newTasks: 3,
+      newNews: 2,
+      stage: "post_idea", // Mapped from status
+    },
+    {
+      id: "mock-uuid-2",
+      title: "Fitness Tracker App",
+      description: "Mobile app for tracking workouts and nutrition",
+      progress: 40,
+      newTasks: 5,
+      newNews: 0,
+      stage: "idea", // Mapped from status
+    },
+    {
+      id: "mock-uuid-3",
+      title: "Blog Website",
+      description: "Personal blog with subscription features",
+      progress: 90,
+      newTasks: 1,
+      newNews: 3,
+      stage: "post_idea", // Mapped from status
+    },
+  ])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const supabase = getSupabase()
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(10)
+
+        if (error) {
+          console.error("Error fetching projects:", error)
+          // Don't set error state here, just use the default projects
+        } else if (data && data.length > 0) {
+          // If we have data from Supabase, use it
+          const formattedProjects = data.map((project) => {
+            // Map DB status to component's stage concept
+            // Project type from database.ts has: status: "active" | "archived"
+            // Component uses: stage: "idea" | "post_idea"
+            const stage = project.status === "active" ? "post_idea" : "idea"
+            return {
+              id: project.id, // Use project.id (UUID string)
+              title: project.name, // Use project.name for title
+              description: project.description || "No description",
+              progress: Math.floor(Math.random() * 100), // Random progress for demo
+              newTasks: Math.floor(Math.random() * 5),
+              newNews: Math.floor(Math.random() * 4),
+              stage: stage,
+            }
+          })
+          setProjects(formattedProjects)
+        }
+        // If no data, we'll use the default projects
+      } catch (err) {
+        console.error("Error in fetchProjects:", err)
+        // Don't set error state, just use the default projects
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjects()
+  }, [])
+
+  const handleProjectClick = (projectId: string) => {
+    router.push(`/projects/${projectId}`)
+  }
+
+  if (loading) {
+    return (
+      <div className="mt-12 w-full max-w-3xl mx-auto">
+        <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="border border-border bg-card rounded-md overflow-hidden animate-pulse">
+              <div className="h-1.5 bg-gray-200"></div>
+              <div className="p-4">
+                <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
+                <div className="flex justify-between items-center">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="flex space-x-3">
+                    <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                    <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-12 w-full max-w-3xl mx-auto">
+      <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {projects.map((project) => (
+          <div
+            key={project.id}
+            className="border border-border bg-card rounded-md overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => handleProjectClick(project.id)}
+          >
+            <div className="h-1.5 bg-primary" style={{ width: `${project.progress}%` }} />
+
+            <div className="p-4">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-medium">{project.title}</h3>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    project.stage === "post_idea" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"
+                  }`}
+                >
+                  {project.stage === "post_idea" ? "Post-Idea" : "Idea"}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
+
+              <div className="mt-4 flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">{project.progress}% complete</div>
+
+                <div className="flex space-x-3">
+                  {project.newTasks > 0 && (
+                    <div className="flex items-center text-sm">
+                      <CheckSquare size={14} className="text-blue-500" />
+                      <span className="ml-1">{project.newTasks}</span>
+                    </div>
+                  )}
+
+                  {project.newNews > 0 && (
+                    <div className="flex items-center text-sm">
+                      <Bell size={14} className="text-orange-500" />
+                      <span className="ml-1">{project.newNews}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
